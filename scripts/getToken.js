@@ -1,25 +1,38 @@
-const { ethers, JsonRpcProvider } = require("ethers");
+const { JsonRpcProvider, Contract, formatUnits } = require("ethers");
+const { parseUnits, formatEther } = require("ethers");
+const { providerRPC } = require("../utils/RpcNetwork");
 
-const providerRPC = {
-  manta: {
-    name: "Manta",
-    rpc: "https://manta-testnet.calderachain.xyz/http",
-    chainId: 3441005,
-  },
-};
 async function getTokenInformation(tokenAddress, accountAddress) {
   const provider = new JsonRpcProvider(providerRPC.manta.rpc);
   const abi = [
+    //Read-Only Functions
     "function balanceOf(address) view returns (uint256)",
     "function totalSupply() view returns (uint256)",
+    "function symbol() view returns (string)",
+    "function decimals() view returns (uint8)",
+    //Authencated Functions
+    "function transfer(address to, uint amount) view returns (bool)",
+    //Events
+    "event Transfer(address indexed from, address indexed to, uint amount)",
   ];
-  const tokenContract = new ethers.Contract(tokenAddress, abi, provider);
+  const tokenContract = new Contract(tokenAddress, abi, provider);
+
+  const symbol = await tokenContract.symbol();
+  console.log(`Symbol token: ${symbol}`);
+
+  const decimals = await tokenContract.decimals();
+  console.log(`Decimals: ${decimals}`);
 
   const balance = await tokenContract.balanceOf(accountAddress);
-  console.log(`Balance of ${accountAddress}: ${balance.toString()} token`);
+  console.log(
+    `Balance of ${accountAddress}: ${formatUnits(
+      balance,
+      decimals
+    ).toString()} token`
+  );
 
   const totalSupply = await tokenContract.totalSupply();
-  console.log(`Total supply: ${totalSupply.toString()} token`);
+  console.log(`Total supply: ${formatEther(totalSupply).toString()} token`);
 }
 
 const tokenAddress = "0x817E85662d9c344e0C3c50e9182a53a23f3E8320";
